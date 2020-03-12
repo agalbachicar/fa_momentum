@@ -482,8 +482,8 @@ def getBinsNew(events, close, t1=None):
     if 'side' in events_:out.loc[out['ret']<=0,'bin']=0 # meta-labeling
     return out
 
-def getRandomForest(n_estimator=10000):
-  return RandomForestClassifier(max_depth=2, n_estimators=n_estimator, criterion='entropy', class_weight='balanced_subsample', random_state=RANDOM_STATE)
+def getRandomForest(n_estimator=150, oob_score=False, max_samples=None):
+  return RandomForestClassifier(max_depth=2, n_estimators=n_estimator, criterion='entropy', class_weight='balanced_subsample', random_state=RANDOM_STATE, oob_score=oob_score, max_samples=max_samples)
 
 def plotROC(y_test, y_pred_rf):
   fpr_rf, tpr_rf, _ = roc_curve(y_test, y_pred_rf)
@@ -538,21 +538,22 @@ def discreteSignal(signal0, stepSize):
   signal1[signal1 < 1] = -1
   return signal1
 
-def getOptimizedRandomForest():
-    n_estimators = [5000, 10000, 15000]
+def getOptimizedRandomForest(max_samples=None, oob_score=False):
+    n_estimators = [50, 100, 150, 300]
     max_depth = [2, 3, 4,]
     max_depth.append(None)
     min_samples_split = [2, 5, 10]
-    min_samples_lead = [1, 2, 5,]
+    min_samples_leaf = [2, 3, 5,]
+    n_iter = 100
 
     grid_params = {'n_estimators': n_estimators,
                    'max_depth': max_depth,
                    'min_samples_split': min_samples_split,
-                   'min_samples_leaf': min_samples_lead}
+                   'min_samples_leaf': min_samples_leaf}
     if RUN_RANDOM_FOREST_OPTIMIZATION:
-      random_forest_classifier = RandomForestClassifier(random_state=RANDOM_STATE)
-      return RandomizedSearchCV(estimator = random_forest_classifier, param_distributions=grid_params, n_iter=500, cv=CV, verbose=2, random_state=RANDOM_STATE**2, n_jobs=-1)
-    return getRandomForest()
+      random_forest_classifier = RandomForestClassifier(random_state=RANDOM_STATE, oob_score=oob_score, max_samples=max_samples)
+      return RandomizedSearchCV(estimator = random_forest_classifier, param_distributions=grid_params, n_iter=n_iter, cv=CV, verbose=2, random_state=RANDOM_STATE**2, n_jobs=-1)
+    return getRandomForest(n_estimator=150, oob_score=oob_score, max_samples=max_samples)
 
 def getWeights(d,size):
   # thres>0 drops insignificant weights
